@@ -2,7 +2,7 @@ package parser;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -11,12 +11,10 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class ParserTree {
 	
@@ -27,12 +25,12 @@ public class ParserTree {
 		}
 	};
 	
-	private static final Comparator<Pair<Tag, Range<Integer>>> COMPARATOR_BY_PAIR = new Comparator<Pair<Tag, Range<Integer>>>() {
-		@Override
-		public int compare(Pair<Tag, Range<Integer>> o1, Pair<Tag, Range<Integer>> o2) {
-			return COMPARATOR_BY_RANGE.compare(o1.getValue(), o2.getValue());
-		}
-	};
+//	private static final Comparator<Pair<Tag, Range<Integer>>> COMPARATOR_BY_PAIR = new Comparator<Pair<Tag, Range<Integer>>>() {
+//		@Override
+//		public int compare(Pair<Tag, Range<Integer>> o1, Pair<Tag, Range<Integer>> o2) {
+//			return COMPARATOR_BY_RANGE.compare(o1.getValue(), o2.getValue());
+//		}
+//	};
 	
 	private static Pattern SPECIAL_REGEX_CHARS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|]");
 
@@ -60,40 +58,62 @@ public class ParserTree {
 //		});
 		
 		//sort all list once time
-		tagPartition.forEach((t, l) -> {
-			Collections.sort(l, COMPARATOR_BY_RANGE);
-		});
+		//solo per SOLUZIONE 1
+//		tagPartition.forEach((t, l) -> {
+//			Collections.sort(l, COMPARATOR_BY_RANGE);
+//		});
 
 //		System.out.println("--------\nSORT\n--------");
 //		tagPartition.forEach((t, l) -> {
 //			System.out.println(t);
 //			l.forEach(System.out::println);
 //		});
-		
+
 		final LinkedList<TemplatePiece> pieces = new LinkedList<TemplatePiece>();
 		final AtomicInteger notEvalutablePoint = new AtomicInteger(0);
 		
-		while(evalutableCounter.decrementAndGet() >= 0) {
-			final List<Pair<Tag, Range<Integer>>> partialMin = tagPartition.entrySet().stream()
-				.filter(e -> e.getValue().size() > 0)	
-				.map(e -> Pair.of(e.getKey(), e.getValue().get(0)))
-				.collect(Collectors.toList());
-
-			final Pair<Tag, Range<Integer>> min = Collections.min(partialMin, COMPARATOR_BY_PAIR);			
-			final Range<Integer> range = min.getValue();
-			
-			pieces.add(new NotEvalutable(
-				substring(template, notEvalutablePoint.get(), range.getMinimum())
-			));
-			
-			pieces.add(new Evalutable(
-				substring(template, range.getMinimum() + 2, range.getMaximum() -2), //tutti i tag devo essere di 2 char 
-				min.getKey()
-			));
-			
-			tagPartition.get(min.getKey()).remove(0);			
-			notEvalutablePoint.getAndSet(range.getMaximum());
-		}
+		//SOLUTION 2		
+		final Map<Range<Integer>, Tag> reverse = new HashMap<Range<Integer>, Tag>();
+		tagPartition.entrySet().stream().forEach(e -> e.getValue().stream().forEach(i -> reverse.put(i, e.getKey())));
+				
+		tagPartition.values().stream()
+			.flatMap(Collection::stream)
+			.sorted(COMPARATOR_BY_RANGE)
+			.forEach(range -> {				
+				pieces.add(new NotEvalutable(
+					substring(template, notEvalutablePoint.get(), range.getMinimum())
+				));
+				
+				pieces.add(new Evalutable(
+					substring(template, range.getMinimum() + 2, range.getMaximum() -2), //tutti i tag devo essere di 2 char 
+					reverse.get(range)
+				));
+				
+				notEvalutablePoint.getAndSet(range.getMaximum());				
+			});		
+		
+		//SOLUTION 1		
+//		while(evalutableCounter.decrementAndGet() >= 0) {
+//			final List<Pair<Tag, Range<Integer>>> partialMin = tagPartition.entrySet().stream()
+//				.filter(e -> e.getValue().size() > 0)	
+//				.map(e -> Pair.of(e.getKey(), e.getValue().get(0)))
+//				.collect(Collectors.toList());
+//
+//			final Pair<Tag, Range<Integer>> min = Collections.min(partialMin, COMPARATOR_BY_PAIR);			
+//			final Range<Integer> range = min.getValue();
+//			
+//			pieces.add(new NotEvalutable(
+//				substring(template, notEvalutablePoint.get(), range.getMinimum())
+//			));
+//			
+//			pieces.add(new Evalutable(
+//				substring(template, range.getMinimum() + 2, range.getMaximum() -2), //tutti i tag devo essere di 2 char 
+//				min.getKey()
+//			));
+//			
+//			tagPartition.get(min.getKey()).remove(0);			
+//			notEvalutablePoint.getAndSet(range.getMaximum());
+//		}
 
 		//tail of template without Evalutable code ... if exist!
 		if (notEvalutablePoint.get() < template.length()) {

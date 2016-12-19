@@ -1,6 +1,7 @@
 package start;
 
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import parser.MessageParts;
 import parser.ParserContext;
@@ -28,7 +29,7 @@ public class Runner {
 		System.out.println("-----------------");
 		System.out.println(template);
 		System.out.println("-----------------");
-//		long before = System.currentTimeMillis();
+		long before = System.currentTimeMillis();
 		
 		//do only once per delivery
 		final ParserTree tree = ParserTree.build(template);
@@ -36,11 +37,12 @@ public class Runner {
 //		System.out.println("tree" + tree);
 //		System.out.println("-----------------");		
 				
-//		IntStream.rangeClosed(0, 1_000_000).forEach(i -> {
-//			tree.eval(new ParserContext());
-//		});				
-//		long after = System.currentTimeMillis();
-//		System.out.println("time elapsed: " + (after-before));
+		IntStream.rangeClosed(0, 1_000_000).forEach(i -> {
+			tree.eval(new ParserContext());
+		});				
+		
+		long after = System.currentTimeMillis();
+		System.out.println("time elapsed: " + (after-before) + "\n\n");
 		
 		//do this for each recipient
 		System.out.println("--------- RESULT --------");

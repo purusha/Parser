@@ -31,7 +31,8 @@ public class ParserTree {
 		final List<Pair<Tag, Range<Integer>>> ranges = new ArrayList<>();
 		
 		Arrays.stream(Tag.values()).forEach(tag -> {
-			final Pattern p = Pattern.compile("(" + escape(tag.getStart()) + ".*?" + escape(tag.getEnd()) + ")");			
+			//final Pattern p = Pattern.compile(escape(tag.getStart()) + "[^ ]*" + escape(tag.getEnd()));			
+			final Pattern p = Pattern.compile("(" + escape(tag.getStart()) + ".*?" + escape(tag.getEnd()) + ")");
 			final Matcher m = p.matcher(template);			
 			
 			while(m.find()) {	
